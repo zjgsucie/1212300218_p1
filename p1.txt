@@ -1,0 +1,97 @@
+源代码：
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+
+char cmd[256];
+
+void main(){
+	int ret;
+	
+	
+	printf("Hello world, this is Linux!");
+	
+	while(1){
+		printf(">");
+		fgets(cmd,256,stdin);
+		cmd[strlen(cmd)] = 0;
+		
+		if(fork() == 0){
+			execlp(cmd,NULL);
+			perror(cmd);
+			exit(errno);
+		} else {
+			wait(&ret);
+			printf("child process return %d \n",ret);
+		}
+	
+	}
+}	
+
+strace工具分析过程：
+execve("./test1", ["./test1"], [/* 71 vars */]) = 0
+brk(0)                                  = 0x94ea000
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+mmap2(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb76df000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+open("/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat64(3, {st_mode=S_IFREG|0644, st_size=90699, ...}) = 0
+mmap2(NULL, 90699, PROT_READ, MAP_PRIVATE, 3, 0) = 0xb76c8000
+close(3)                                = 0
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/i386-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0\3\0\1\0\0\0\340\233\1\0004\0\0\0"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0755, st_size=1758972, ...}) = 0
+mmap2(NULL, 1763964, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0xb7519000
+mmap2(0xb76c2000, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1a9000) = 0xb76c2000
+mmap2(0xb76c5000, 10876, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0xb76c5000
+close(3)                                = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb7518000
+set_thread_area({entry_number:-1 -> 6, base_addr:0xb7518940, limit:1048575, seg_32bit:1, contents:0, read_exec_only:0, limit_in_pages:1, seg_not_present:0, useable:1}) = 0
+mprotect(0xb76c2000, 8192, PROT_READ)   = 0
+mprotect(0x8049000, 4096, PROT_READ)    = 0
+mprotect(0xb7702000, 4096, PROT_READ)   = 0
+munmap(0xb76c8000, 90699)               = 0
+fstat64(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 0), ...}) = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb76de000
+fstat64(0, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 0), ...}) = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb76dd000
+write(1, "Hello world, this is Linux!>", 28) = 28
+read(0, "1\n", 1024)                    = 2
+clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xb75189a8) = 5446
+wait4(-1, [{WIFEXITED(s) && WEXITSTATUS(s) == 2}], 0, NULL) = 5446
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=5446, si_status=2, si_utime=0, si_stime=0} ---
+write(1, "child process return 512 \n", 26) = 26
+write(1, ">", 1)                        = 1
+read(0, "2\n", 1024)                    = 2
+clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xb75189a8) = 5447
+wait4(-1, [{WIFEXITED(s) && WEXITSTATUS(s) == 2}], 0, NULL) = 5447
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=5447, si_status=2, si_utime=0, si_stime=0} ---
+write(1, "child process return 512 \n", 26) = 26
+write(1, ">", 1)                        = 1
+
+………
+………
+read(0, "9\n", 1024)                    = 2
+clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xb75189a8) = 5454
+wait4(-1, [{WIFEXITED(s) && WEXITSTATUS(s) == 2}], 0, NULL) = 5454
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=5454, si_status=2, si_utime=0, si_stime=0} ---
+write(1, "child process return 512 \n", 26) = 26
+write(1, ">", 1)                        = 1
+read(0, "0\n", 1024)                    = 2
+clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xb75189a8) = 5455
+wait4(-1, [{WIFEXITED(s) && WEXITSTATUS(s) == 2}], 0, NULL) = 5455
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=5455, si_status=2, si_utime=0, si_stime=0} ---
+write(1, "child process return 512 \n", 26) = 26
+write(1, ">", 1)                        = 1
+read(0, "-\n", 1024)                    = 2
+clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xb75189a8) = 5456
+wait4(-1, [{WIFEXITED(s) && WEXITSTATUS(s) == 2}], 0, NULL) = 5456
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=5456, si_status=2, si_utime=0, si_stime=0} ---
+write(1, "child process return 512 \n", 26) = 26
+write(1, ">", 1)                        = 1
+read(0, 0xb76dd000, 1024)               = ? ERESTARTSYS (To be restarted if SA_RESTART is set)
+--- SIGHUP {si_signo=SIGHUP, si_code=SI_USER, si_pid=5404, si_uid=1000} ---
++++ killed by SIGHUP +++
+
+从strace结构可以看到，系统首先调用execve开始一个新的进行，接着进行些环境的初始化操作，最后停顿在”read(0,”上面，这也就是执行到了我们的fgets(cmd,256,stdin)函数，等待我们输入字符之后，接着进行clone和wait操作，然后调用write函数将"child process return 512 \n"等字符串输出到屏幕，每输入一次si_pid便加1.最后由于程序没有循环出口，直接关闭退出(“+++ killed by SIGHUP +++”)完成整个程序的执行过程。
